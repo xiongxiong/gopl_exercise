@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -39,10 +40,16 @@ func serveTime(port string, zone string) {
 	}
 }
 
+var mutex = sync.Mutex{}
+
 func handleConn(c net.Conn, zone string) {
 	defer c.Close()
 	for {
+		mutex.Lock()
+		println(zone)
+		println(time.Now().Format(fmt.Sprintf("15:04:05 %s %s | ", zone, os.Getenv("TZ"))))
 		_, err := io.WriteString(c, time.Now().Format(fmt.Sprintf("15:04:05 %s %s | ", zone, os.Getenv("TZ"))))
+		mutex.Unlock()
 		if err != nil {
 			return
 		}
