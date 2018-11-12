@@ -49,7 +49,7 @@ var smap map[int]string
 func (w *MyWriter) Write(b []byte) (int, error) {
 	mutex.Lock()
 	smap[w.Index] = string(b)
-	s := fmt.Sprintf("\r%s\t%s\t%s", smap[0], smap[1], smap[2])
+	s := fmt.Sprintf("\r%10s\t%10s\t%10s", smap[0], smap[1], smap[2])
 	mutex.Unlock()
 	if _, err := io.WriteString(os.Stdout, s); err != nil {
 		return len(b), err

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var zones = []string{"CST", "MST", "PST", "AKST"}
+var zones = []string{"Europe/Berlin", "Asia/Tokyo", "America/New_York", "Europe/London"}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -18,13 +18,14 @@ func main() {
 	}
 
 	for i, port := range os.Args[1:] {
-		go serveTime(port, zones[i%4])
+		loc, _ := time.LoadLocation(zones[i%4])
+		go serveTime(port, loc)
 	}
 
 	select {}
 }
 
-func serveTime(port string, zone string) {
+func serveTime(port string, loc *time.Location) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
 		log.Fatal(err)
@@ -36,19 +37,17 @@ func serveTime(port string, zone string) {
 			log.Print(err)
 			continue
 		}
-		go handleConn(conn, zone)
+		go handleConn(conn, loc)
 	}
 }
 
 var mutex = sync.Mutex{}
 
-func handleConn(c net.Conn, zone string) {
+func handleConn(c net.Conn, loc *time.Location) {
 	defer c.Close()
 	for {
 		mutex.Lock()
-		println(zone)
-		println(time.Now().Format(fmt.Sprintf("15:04:05 %s %s | ", zone, os.Getenv("TZ"))))
-		_, err := io.WriteString(c, time.Now().Format(fmt.Sprintf("15:04:05 %s %s | ", zone, os.Getenv("TZ"))))
+		_, err := io.WriteString(c, time.Now().In(loc).Format(fmt.Sprintf("15:04:05")))
 		mutex.Unlock()
 		if err != nil {
 			return
